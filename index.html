@@ -1,0 +1,320 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0866ff">
+<title>VK CONNECT - Connect the World</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f2f5fa;color:#172033}
+button,input,textarea{font:inherit}
+button{border:0;border-radius:10px;padding:12px;background:#0866ff;color:white;cursor:pointer}
+input,textarea{width:100%;padding:13px;border:1px solid #ddd;border-radius:10px;margin:8px 0;background:white}
+.hidden{display:none!important}
+header{background:#0866ff;color:white;padding:17px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;font-weight:bold;font-size:20px}
+.logo{background:white;color:#0866ff;border-radius:10px;padding:9px;font-weight:bold}
+main{max-width:700px;margin:auto;padding:15px;padding-bottom:100px}
+.page h2{color:#0866ff;margin-bottom:15px}
+.card,.profile-card,.chat-item{background:white;padding:15px;border-radius:13px;margin:10px 0;box-shadow:0 2px 8px #0001}
+.auth{max-width:420px;margin:60px auto;padding:25px;text-align:center}
+.auth h1{color:#0866ff;margin:15px}
+.auth button{width:100%;margin-top:8px}
+.secondary{background:#e7efff;color:#0866ff}
+nav{position:fixed;bottom:0;left:0;width:100%;background:white;display:flex;justify-content:space-around;padding:7px 2px;box-shadow:0 -2px 10px #0002}
+nav button{background:transparent;color:#0866ff;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:19px}
+nav span{font-size:10px}
+.message{background:#e5efff;padding:10px;border-radius:12px;margin:8px 0;overflow-wrap:anywhere}
+.conversation{background:white;padding:12px;border-radius:12px;margin-top:15px}
+#messages{min-height:100px;max-height:300px;overflow:auto}
+.message-input{display:flex;gap:5px}
+.message-input input{flex:1;min-width:0}
+.avatar{background:#0866ff;color:white;border-radius:50%;width:75px;height:75px;display:grid;place-items:center;margin:10px auto;font-size:25px}
+.danger{background:#e53935}
+body.dark{background:#101827;color:white}
+body.dark .card,body.dark .profile-card,body.dark .chat-item,body.dark .conversation,body.dark nav{background:#1e293b;color:white}
+body.dark input,body.dark textarea{background:#263449;color:white;border-color:#40516a}
+body.dark .message{background:#263f68;color:white}
+@media(max-width:420px){nav span{font-size:9px}}
+</style>
+</head>
+
+<body>
+
+<div id="auth" class="auth">
+  <div class="logo" style="display:inline-block;font-size:35px">VK</div>
+  <h1>VK CONNECT</h1>
+  <p>Connect the World.</p>
+  <input id="name" placeholder="Your full name">
+  <input id="email" type="email" placeholder="Email address">
+  <button onclick="enterApp()">Continue</button>
+  <p id="authMessage" style="margin-top:12px;color:#e53935"></p>
+  <small>Demo version. Real account registration will be connected later.</small>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <div class="brand"><div class="logo">VK</div> VK CONNECT</div>
+  <button onclick="theme()">☾</button>
+</header>
+
+<main>
+<section id="chats" class="page">
+<h2>💬 Chats</h2>
+<input id="contact" placeholder="Enter contact name">
+<button onclick="newChat()">+ New Chat</button>
+<div id="chatList"></div>
+<div class="conversation">
+<h3 id="chatTitle">Select a chat</h3>
+<div id="messages"></div>
+<div class="message-input">
+<input id="message" placeholder="Write a message...">
+<button onclick="sendMessage()">Send</button>
+</div>
+</div>
+</section>
+
+<section id="status" class="page hidden">
+<h2>⭕ Status</h2>
+<input id="statusText" placeholder="What's happening?">
+<button onclick="postStatus()">Share Status</button>
+<div id="statuses"></div>
+</section>
+
+<section id="calls" class="page hidden">
+<h2>📞 Calls</h2>
+<div class="card">
+<h3>Voice and Video Calls</h3>
+<p>Calling features will be connected when the real-time backend is ready.</p>
+</div>
+</section>
+
+<section id="communities" class="page hidden">
+<h2>👥 Communities</h2>
+<input id="groupName" placeholder="Community name">
+<button onclick="createGroup()">Create Community</button>
+<div id="groups"></div>
+</section>
+
+<section id="discover" class="page hidden">
+<h2>🌍 Discover</h2>
+<textarea id="postText" placeholder="Share something with the world..."></textarea>
+<button onclick="publishPost()">Publish Post</button>
+<div id="posts"></div>
+</section>
+
+<section id="profile" class="page hidden">
+<h2>👤 My Profile</h2>
+<div class="profile-card" style="text-align:center">
+<div class="avatar">VK</div>
+<h3 id="profileName"></h3>
+<p id="profileEmail"></p>
+<p>Connect the World.</p>
+</div>
+<button class="danger" onclick="logout()">Logout</button>
+</section>
+</main>
+
+<nav>
+<button onclick="showPage('chats')">💬<span>Chats</span></button>
+<button onclick="showPage('status')">⭕<span>Status</span></button>
+<button onclick="showPage('calls')">📞<span>Calls</span></button>
+<button onclick="showPage('communities')">👥<span>Groups</span></button>
+<button onclick="showPage('discover')">🌍<span>Discover</span></button>
+<button onclick="showPage('profile')">👤<span>Profile</span></button>
+</nav>
+</div>
+
+<script>
+let user=null;
+let chats=JSON.parse(localStorage.getItem("vkChats")||"[]");
+let statuses=JSON.parse(localStorage.getItem("vkStatuses")||"[]");
+let groups=JSON.parse(localStorage.getItem("vkGroups")||"[]");
+let posts=JSON.parse(localStorage.getItem("vkPosts")||"[]");
+let selected=null;
+
+function save(key,data){
+ localStorage.setItem(key,JSON.stringify(data));
+}
+
+function enterApp(){
+ const name=document.getElementById("name").value.trim();
+ const email=document.getElementById("email").value.trim();
+ if(!name||!email){
+  document.getElementById("authMessage").textContent="Enter your name and email.";
+  return;
+ }
+ user={name,email};
+ localStorage.setItem("vkUser",JSON.stringify(user));
+ openApp();
+}
+
+function openApp(){
+ document.getElementById("auth").classList.add("hidden");
+ document.getElementById("app").classList.remove("hidden");
+ document.getElementById("profileName").textContent=user.name;
+ document.getElementById("profileEmail").textContent=user.email;
+ renderChats();renderStatuses();renderGroups();renderPosts();
+}
+
+function logout(){
+ localStorage.removeItem("vkUser");
+ location.reload();
+}
+
+function showPage(id){
+ document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
+}
+
+function newChat(){
+ const name=document.getElementById("contact").value.trim();
+ if(!name)return alert("Enter a contact name.");
+ chats.push({id:Date.now(),name,messages:[]});
+ save("vkChats",chats);
+ document.getElementById("contact").value="";
+ renderChats();
+}
+
+function renderChats(){
+ const list=document.getElementById("chatList");
+ list.innerHTML="";
+ chats.forEach(c=>{
+  const item=document.createElement("div");
+  item.className="chat-item";
+  item.textContent="💬 "+c.name;
+  item.onclick=()=>openChat(c.id);
+  list.appendChild(item);
+ });
+}
+
+function openChat(id){
+ selected=id;
+ const chat=chats.find(c=>c.id===id);
+ document.getElementById("chatTitle").textContent=chat.name;
+ renderChats();renderMessages();
+}
+
+function sendMessage(){
+ const input=document.getElementById("message");
+ const text=input.value.trim();
+ if(!text||selected===null)return alert("Select a chat first.");
+ const chat=chats.find(c=>c.id===selected);
+ chat.messages.push({text,sender:user.name,time:new Date().toLocaleTimeString()});
+ save("vkChats",chats);
+ input.value="";
+ renderMessages();
+}
+
+function renderMessages(){
+ const box=document.getElementById("messages");
+ box.innerHTML="";
+ const chat=chats.find(c=>c.id===selected);
+ if(!chat)return;
+ chat.messages.forEach(m=>{
+  const div=document.createElement("div");
+  div.className="message";
+  div.textContent=m.sender+": "+m.text+" · "+m.time;
+  box.appendChild(div);
+ });
+ box.scrollTop=box.scrollHeight;
+}
+
+function postStatus(){
+ const text=document.getElementById("statusText").value.trim();
+ if(!text)return;
+ statuses.unshift({name:user.name,text,time:new Date().toLocaleString()});
+ save("vkStatuses",statuses);
+ document.getElementById("statusText").value="";
+ renderStatuses();
+}
+
+function renderStatuses(){
+ const box=document.getElementById("statuses");
+ box.innerHTML="";
+ statuses.forEach(s=>{
+  const card=document.createElement("div");
+  card.className="card";
+  const heading=document.createElement("strong");
+  heading.textContent=s.name;
+  const content=document.createElement("p");
+  content.textContent=s.text;
+  const time=document.createElement("small");
+  time.textContent=s.time;
+  card.append(heading,content,time);
+  box.appendChild(card);
+ });
+}
+
+function createGroup(){
+ const name=document.getElementById("groupName").value.trim();
+ if(!name)return;
+ groups.push(name);save("vkGroups",groups);
+ document.getElementById("groupName").value="";
+ renderGroups();
+}
+
+function renderGroups(){
+ const box=document.getElementById("groups");
+ box.innerHTML="";
+ groups.forEach(g=>{
+  const card=document.createElement("div");
+  card.className="card";
+  card.textContent="👥 "+g;
+  box.appendChild(card);
+ });
+}
+
+function publishPost(){
+ const text=document.getElementById("postText").value.trim();
+ if(!text)return;
+ posts.unshift({name:user.name,text,likes:0});
+ save("vkPosts",posts);
+ document.getElementById("postText").value="";
+ renderPosts();
+}
+
+function renderPosts(){
+ const box=document.getElementById("posts");
+ box.innerHTML="";
+ posts.forEach((p,i)=>{
+  const card=document.createElement("div");
+  card.className="card";
+  const heading=document.createElement("strong");
+  heading.textContent=p.name;
+  const content=document.createElement("p");
+  content.textContent=p.text;
+  const like=document.createElement("button");
+  like.textContent="👍 Like ("+p.likes+")";
+  like.onclick=()=>{
+   posts[i].likes++;
+   save("vkPosts",posts);
+   renderPosts();
+  };
+  card.append(heading,content,like);
+  box.appendChild(card);
+ });
+}
+
+function theme(){
+ document.body.classList.toggle("dark");
+ localStorage.setItem("vkTheme",document.body.classList.contains("dark")?"dark":"light");
+}
+
+if(localStorage.getItem("vkTheme")==="dark"){
+ document.body.classList.add("dark");
+}
+
+try{
+ user=JSON.parse(localStorage.getItem("vkUser"));
+ if(user)openApp();
+}catch(e){
+ localStorage.removeItem("vkUser");
+}
+</script>
+
+</body>
+</html>
